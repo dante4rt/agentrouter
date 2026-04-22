@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "unauthorized client detected: your request fingerprint does not match expected SDK headers",
+    "type": "authentication_error",
+    "code": "unauthorized_client"
+  }
+}

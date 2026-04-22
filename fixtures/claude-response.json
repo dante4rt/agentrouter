@@ -1,0 +1,1 @@
+"{\"id\":\"msg_01XFDUDYJgAACzvnptvVoYEL\",\"model\":\"claude-opus-4-7\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"Hello! How can I assist you today?\",\"reasoning_content\":null},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":9,\"total_tokens\":21}}"

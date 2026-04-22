@@ -1,0 +1,10 @@
+data: {"id":"chatcmpl-reasoning-001","model":"deepseek-r1-0528","choices":[{"index":0,"delta":{"role":"assistant","reasoning_content":"Let me think..."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reasoning-001","model":"deepseek-r1-0528","choices":[{"index":0,"delta":{"reasoning_content":" The answer is 4."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reasoning-001","model":"deepseek-r1-0528","choices":[{"index":0,"delta":{"content":"2 + 2 = 4"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-reasoning-001","model":"deepseek-r1-0528","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+

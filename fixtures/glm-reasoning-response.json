@@ -1,0 +1,20 @@
+{
+  "id": "chatcmpl-glm-xyz789",
+  "model": "glm-4.5",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "Let me think about this step by step. The user asked a basic math question. 2 + 2 = 4. That is the answer."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 10,
+    "completion_tokens": 38,
+    "total_tokens": 48
+  }
+}

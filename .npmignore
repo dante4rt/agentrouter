@@ -1,0 +1,16 @@
+src
+test
+fixtures
+node_modules
+coverage
+.env*
+.github
+.vscode
+.idea
+biome.json
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+PLAN-agentrouter.md
+*.log
+*.tsbuildinfo

@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "无可用渠道",
+    "type": "service_unavailable",
+    "code": "no_channel"
+  }
+}

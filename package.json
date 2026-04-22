@@ -1,0 +1,69 @@
+{
+  "name": "@dante4rt/agentrouter",
+  "version": "0.1.0",
+  "description": "Unofficial Node/Bun/Deno SDK for AgentRouter — wraps the OpenAI-compatible reseller proxy at agentrouter.org.",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:live": "AR_LIVE_TEST=1 vitest run",
+    "lint": "biome check src test",
+    "format": "biome format --write src test",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build"
+  },
+  "keywords": [
+    "agentrouter",
+    "openai",
+    "claude",
+    "deepseek",
+    "glm",
+    "llm",
+    "sdk",
+    "proxy"
+  ],
+  "author": "dante4rt",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dante4rt/agentrouter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dante4rt/agentrouter/issues"
+  },
+  "homepage": "https://github.com/dante4rt/agentrouter#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.0",
+    "msw": "^2.6.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

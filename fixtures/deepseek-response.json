@@ -1,0 +1,20 @@
+{
+  "id": "chatcmpl-deepseek-abc123",
+  "model": "deepseek-v3.2",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The answer is 42.",
+        "reasoning_content": null
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 15,
+    "completion_tokens": 5,
+    "total_tokens": 20
+  }
+}
