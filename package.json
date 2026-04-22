@@ -1,5 +1,5 @@
 {
-  "name": "@dante4rt/agentrouter",
+  "name": "@rxmxdhxni/agentrouter",
   "version": "0.1.0",
   "description": "Unofficial Node/Bun/Deno SDK for AgentRouter — wraps the OpenAI-compatible reseller proxy at agentrouter.org.",
   "private": false,

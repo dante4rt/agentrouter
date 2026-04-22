@@ -1,4 +1,4 @@
-# @dante4rt/agentrouter
+# @rxmxdhxni/agentrouter
 
 Unofficial Node/Bun/Deno SDK for AgentRouter — handles the quirks so you can skip straight to `ar.chat("hi")`.
 
@@ -8,9 +8,9 @@ Unofficial Node/Bun/Deno SDK for AgentRouter — handles the quirks so you can s
 ## Install
 
 ```bash
-npm install @dante4rt/agentrouter
+npm install @rxmxdhxni/agentrouter
 # or
-bun add @dante4rt/agentrouter
+bun add @rxmxdhxni/agentrouter
 ```
 
 > [!IMPORTANT]
@@ -19,7 +19,7 @@ bun add @dante4rt/agentrouter
 ## Quick start
 
 ```typescript
-import { AgentRouter } from "@dante4rt/agentrouter";
+import { AgentRouter } from "@rxmxdhxni/agentrouter";
 
 const ar = new AgentRouter({ apiKey: "sk-..." });
 const reply = await ar.chat("What is 2 + 2?");
@@ -164,7 +164,7 @@ import {
   NoChannelError,
   RateLimitError,
   UnauthorizedClientError,
-} from "@dante4rt/agentrouter";
+} from "@rxmxdhxni/agentrouter";
 
 try {
   const result = await ar.complete({ messages, model: "deepseek-v3.2" });
