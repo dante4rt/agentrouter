@@ -164,8 +164,12 @@ export class AgentRouter {
 
     const body = buildWireBody(req.messages, model, maxTokens, req, true);
 
-    const { body: stream } = await this.transport.stream("/chat/completions", body, req.signal);
+    const {
+      body: stream,
+      timeoutSignal,
+      timeoutMs,
+    } = await this.transport.stream("/chat/completions", body, req.signal);
 
-    yield* parseSSE(stream, req.signal);
+    yield* parseSSE(stream, { signal: req.signal, timeoutSignal, timeoutMs });
   }
 }

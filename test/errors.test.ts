@@ -44,31 +44,41 @@ describe("classifyError — UnauthorizedClientError", () => {
 // ---------------------------------------------------------------------------
 
 describe("classifyError — NoChannelError", () => {
-  it("should return NoChannelError on 503 with model attached", () => {
-    const err = classifyError(503, { error: "upstream timeout" }, "claude-haiku-4-5");
+  it("should return NoChannelError on 503 with the no-channel marker", () => {
+    const err = classifyError(503, noChannelFixture, "claude-haiku-4-5");
 
     expect(err).toBeInstanceOf(NoChannelError);
     expect(err.status).toBe(503);
     expect((err as NoChannelError).model).toBe("claude-haiku-4-5");
   });
 
-  it("should return NoChannelError when body contains Chinese no-channel marker on 200-range status", () => {
-    // The marker check fires before the status check in classifyError, so even
-    // a non-503 status triggers NoChannelError when the body text matches.
+  it("should return NoChannelError when body contains Chinese no-channel marker on any status", () => {
+    // The marker check is the only signal — status is irrelevant. A bare 503
+    // without the marker falls through to the generic AgentRouterError.
     const err = classifyError(200, noChannelFixture, "glm-4.5");
 
     expect(err).toBeInstanceOf(NoChannelError);
     expect((err as NoChannelError).model).toBe("glm-4.5");
   });
 
+  it("should NOT classify a bare 503 (no marker) as NoChannelError", () => {
+    // Generic outage / maintenance / proxy failure must not be miscategorized
+    // as "switch model" — it could be a service-wide outage.
+    const err = classifyError(503, { error: "Service unavailable" }, "deepseek-v3.2");
+
+    expect(err).not.toBeInstanceOf(NoChannelError);
+    expect(err).toBeInstanceOf(AgentRouterError);
+    expect(err.status).toBe(503);
+  });
+
   it("should mention the model name in the error message", () => {
-    const err = classifyError(503, {}, "deepseek-v3.2") as NoChannelError;
+    const err = classifyError(503, noChannelFixture, "deepseek-v3.2") as NoChannelError;
 
     expect(err.message).toContain("deepseek-v3.2");
   });
 
   it("should suggest trying a different model in the message", () => {
-    const err = classifyError(503, {}, "glm-4.6") as NoChannelError;
+    const err = classifyError(503, noChannelFixture, "glm-4.6") as NoChannelError;
 
     expect(err.message).toMatch(/try a different model/i);
   });

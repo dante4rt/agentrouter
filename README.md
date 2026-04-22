@@ -158,6 +158,9 @@ All errors extend `AgentRouterError`, which carries `.status` (HTTP code) and `.
 | `TimeoutError`            | 0       | Request exceeded `timeout` ms               | Increase `timeout` or retry                                                 |
 | `AgentRouterError`        | any     | Unclassified HTTP error                     | Inspect `.status` and `.body`                                               |
 
+> [!NOTE]
+> User-initiated aborts (via `AbortSignal`) throw the native `DOMException` / `AbortError` — matches standard `fetch` behavior. `TimeoutError` only fires for the SDK's internal `timeout` option.
+
 ```typescript
 import {
   AgentRouter,

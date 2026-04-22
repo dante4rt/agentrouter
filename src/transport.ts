@@ -1,4 +1,4 @@
-import { TimeoutError, classifyError } from "./errors.js";
+import { AgentRouterError, TimeoutError, classifyError } from "./errors.js";
 
 declare const Deno:
   | {
@@ -211,13 +211,25 @@ export class Transport {
       }
 
       const text = await response.text();
-      let data: unknown = JSON.parse(text);
-
-      // AgentRouter double-encodes Claude responses as a JSON string inside the
-      // outer JSON object. DeepSeek and GLM are plain objects, so this is a no-op
-      // for them. Always attempting the second parse is safe and future-proof.
-      if (typeof data === "string") {
-        data = JSON.parse(data);
+      let data: unknown;
+      try {
+        data = JSON.parse(text);
+        // AgentRouter double-encodes Claude responses as a JSON string inside the
+        // outer JSON object. DeepSeek and GLM are plain objects, so this is a no-op
+        // for them. Always attempting the second parse is safe and future-proof.
+        if (typeof data === "string") {
+          data = JSON.parse(data);
+        }
+      } catch (parseErr) {
+        if (parseErr instanceof AgentRouterError) throw parseErr;
+        // Wrap so callers always see AgentRouterError, never a raw SyntaxError.
+        // Common cause: upstream proxy returned an HTML challenge page with 200.
+        const snippet = text.length > 200 ? `${text.slice(0, 200)}...` : text;
+        throw new AgentRouterError(
+          `AgentRouter returned a 2xx response with non-JSON body: ${snippet}`,
+          response.status,
+          text
+        );
       }
 
       return { data, headers: responseHeaders };
@@ -235,11 +247,17 @@ export class Transport {
     path: string,
     body: RequestBody,
     signal?: AbortSignal
-  ): Promise<{ body: ReadableStream<Uint8Array>; headers: Headers }> {
-    // Timeout and caller signal are composed; the timeout controller is NOT
-    // cleaned up here because the stream may outlive this call. The stream
-    // consumer owns the lifetime; callers should pass their own AbortSignal
-    // for cancellation.
+  ): Promise<{
+    body: ReadableStream<Uint8Array>;
+    headers: Headers;
+    timeoutSignal: AbortSignal;
+    timeoutMs: number;
+  }> {
+    // Timeout and caller signal are composed; the timer is NOT cleaned up here
+    // because the stream may outlive this call. The timer is .unref()'d in
+    // makeTimeoutSignal so it doesn't keep the process alive. The caller
+    // (parseSSE) inspects timeoutSignal during body reads to throw TimeoutError
+    // when a body read is aborted by our internal timeout.
     const { signal: composedSignal, timeoutSignal } = this.makeTimeoutSignal(signal);
 
     let response: Response;
@@ -262,7 +280,12 @@ export class Transport {
       throw new Error("AgentRouter stream response had no body.");
     }
 
-    return { body: response.body, headers: response.headers };
+    return {
+      body: response.body,
+      headers: response.headers,
+      timeoutSignal,
+      timeoutMs: this.opts.timeout,
+    };
   }
 
   private async dispatch(path: string, body: RequestBody, signal: AbortSignal): Promise<Response> {

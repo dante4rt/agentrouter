@@ -1,5 +1,14 @@
-import { AgentRouterError } from "./errors.js";
+import { AgentRouterError, TimeoutError } from "./errors.js";
 import type { StreamChunk } from "./types.js";
+
+export interface ParseSSEOptions {
+  signal?: AbortSignal;
+  // Internal timeout signal from Transport.stream(). When this aborts during a
+  // body read, parseSSE throws TimeoutError to keep the public error contract
+  // consistent across non-streaming and streaming paths.
+  timeoutSignal?: AbortSignal;
+  timeoutMs?: number;
+}
 
 // Cap on incomplete-frame buffer. Protects against slowloris-style streams
 // that never emit \n\n (malicious or misbehaving upstream).
@@ -87,8 +96,13 @@ function extractDelta(obj: Record<string, unknown>): {
 
 export async function* parseSSE(
   stream: ReadableStream<Uint8Array>,
-  signal?: AbortSignal
+  signalOrOpts?: AbortSignal | ParseSSEOptions
 ): AsyncIterable<StreamChunk> {
+  // Backwards-compatible signature: accept a bare AbortSignal or an options bag.
+  const opts: ParseSSEOptions =
+    signalOrOpts instanceof AbortSignal ? { signal: signalOrOpts } : (signalOrOpts ?? {});
+  const { signal, timeoutSignal, timeoutMs } = opts;
+
   const reader = stream.getReader();
   // Per-stream decoder: TextDecoder with {stream: true} is stateful across
   // decode() calls, so a shared instance would corrupt concurrent streams.
@@ -97,16 +111,47 @@ export async function* parseSSE(
   // Guard: emit the terminal done chunk at most once even if [DONE] and
   // finish_reason both appear (some providers send both).
   let doneSent = false;
+  // Track whether we've seen a parseable SSE frame. EOF without any valid frame
+  // (e.g. HTML challenge page returned with 200) must throw, not silently succeed.
+  let sawValidFrame = false;
+
+  const checkTimeout = (err?: unknown): never | undefined => {
+    if (timeoutSignal?.aborted) {
+      throw new TimeoutError(timeoutMs ?? 0);
+    }
+    if (err !== undefined) throw err;
+  };
 
   try {
     while (true) {
       if (signal?.aborted) return;
 
-      const { done, value } = await reader.read();
+      let chunk: ReadableStreamReadResult<Uint8Array>;
+      try {
+        chunk = await reader.read();
+      } catch (err) {
+        // Body-read aborted. If our internal timeout fired, surface as TimeoutError.
+        // Otherwise rethrow (caller-aborted = native AbortError, intentional).
+        checkTimeout(err);
+        throw err;
+      }
+
+      const { done, value } = chunk;
 
       if (done) {
-        // Stream closed without [DONE] sentinel — emit terminal chunk if needed.
         if (!doneSent) {
+          if (!sawValidFrame) {
+            // Body closed before any valid SSE frame arrived. Treat as upstream
+            // error rather than synthesizing a successful empty completion.
+            const preview = buffer.slice(0, 200);
+            throw new AgentRouterError(
+              `Stream closed without a valid SSE frame${
+                preview ? ` (body preview: ${JSON.stringify(preview)})` : ""
+              }`,
+              0,
+              buffer || null
+            );
+          }
           doneSent = true;
           yield { type: "content", delta: "", done: true };
         }
@@ -137,6 +182,7 @@ export async function* parseSSE(
 
         // [DONE] sentinel ends the stream.
         if (payload.trim() === "[DONE]") {
+          sawValidFrame = true;
           if (!doneSent) {
             doneSent = true;
             yield { type: "content", delta: "", done: true };
@@ -147,6 +193,8 @@ export async function* parseSSE(
         const obj = parsePayload(payload);
         // Silently skip unparseable frames (keep-alive or unknown edge payloads).
         if (!isObject(obj)) continue;
+
+        sawValidFrame = true;
 
         const { content, reasoning, finishReason } = extractDelta(obj);
 

@@ -380,3 +380,79 @@ describe("parseSSE — abort signal", () => {
     expect(contentChunks.length).toBeLessThanOrEqual(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bare EOF without any valid frame must throw, not silently succeed
+// ---------------------------------------------------------------------------
+
+describe("parseSSE — invalid stream body", () => {
+  it("should throw AgentRouterError when stream ends with no SSE frames at all", async () => {
+    const { AgentRouterError } = await import("../src/errors.js");
+    const stream = makeStream(["<html><body>challenge page</body></html>"]);
+
+    await expect(collect(stream)).rejects.toBeInstanceOf(AgentRouterError);
+  });
+
+  it("should throw AgentRouterError on completely empty body", async () => {
+    const { AgentRouterError } = await import("../src/errors.js");
+    const stream = makeStream([]);
+
+    await expect(collect(stream)).rejects.toBeInstanceOf(AgentRouterError);
+  });
+
+  it("should include body preview snippet in the thrown error message", async () => {
+    const { AgentRouterError } = await import("../src/errors.js");
+    const stream = makeStream(["<html>blocked</html>"]);
+
+    try {
+      await collect(stream);
+      throw new Error("expected to throw");
+    } catch (err) {
+      expect(err).toBeInstanceOf(AgentRouterError);
+      expect((err as Error).message).toContain("blocked");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Timeout signal during body read surfaces as TimeoutError
+// ---------------------------------------------------------------------------
+
+describe("parseSSE — timeout signal", () => {
+  it("should throw TimeoutError when timeoutSignal aborted before iteration starts", async () => {
+    const { TimeoutError } = await import("../src/errors.js");
+    const timeoutController = new AbortController();
+    timeoutController.abort(Symbol("agentrouter-timeout"));
+
+    // Stream that stalls forever; the abort guard at the top of the loop fires
+    // before reader.read() blocks.
+    const stream = new ReadableStream<Uint8Array>({
+      start() {
+        // never enqueue, never close — would hang indefinitely without abort handling
+      },
+    });
+
+    // Wait — abort is detected via timeoutSignal.aborted check at catch time, not
+    // top-of-loop. So we need read() to actually reject. Wire an error.
+    const erroringStream = new ReadableStream<Uint8Array>({
+      start(c) {
+        // Fire abort error synchronously to simulate runtime aborting the read.
+        c.error(new DOMException("aborted", "AbortError"));
+      },
+    });
+
+    await expect(
+      (async () => {
+        for await (const _ of parseSSE(erroringStream, {
+          timeoutSignal: timeoutController.signal,
+          timeoutMs: 50,
+        })) {
+          // drain
+        }
+      })()
+    ).rejects.toBeInstanceOf(TimeoutError);
+
+    // Drain the unused stream to avoid unhandled rejections.
+    void stream.cancel();
+  });
+});

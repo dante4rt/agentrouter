@@ -76,7 +76,10 @@ export function classifyError(
     return new UnauthorizedClientError(body);
   }
 
-  if (status === 503 || bodyText.includes(NO_CHANNEL_MARKER)) {
+  // NoChannelError requires the explicit marker. A bare 503 could be a generic
+  // outage, maintenance page, or upstream proxy failure — sending callers down
+  // the "switch model" recovery path would be wrong in those cases.
+  if (bodyText.includes(NO_CHANNEL_MARKER)) {
     return new NoChannelError(model, body);
   }
 
