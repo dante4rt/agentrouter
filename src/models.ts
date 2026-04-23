@@ -1,3 +1,6 @@
+// Known-good models. Channel availability fluctuates upstream — if a call
+// returns NoChannelError for one of these, the model is temporarily down,
+// not removed. Check agentrouter.org for the live list.
 export const KNOWN_MODELS = [
   "claude-opus-4-6",
   "claude-opus-4-7",

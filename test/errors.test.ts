@@ -6,6 +6,7 @@ import unauthorizedClientFixture from "../fixtures/error-unauthorized-client.jso
 import {
   AgentRouterError,
   AuthError,
+  ContentBlockedError,
   NoChannelError,
   RateLimitError,
   UnauthorizedClientError,
@@ -108,6 +109,34 @@ describe("classifyError — AuthError", () => {
     const err = classifyError(401, null, "m");
 
     expect(err).toBeInstanceOf(AuthError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// classifyError — ContentBlockedError
+// ---------------------------------------------------------------------------
+
+describe("classifyError — ContentBlockedError", () => {
+  it("should return ContentBlockedError on 400 with content-blocked code", () => {
+    const body = {
+      error: {
+        code: "content-blocked",
+        message: "content-blocked (request id: abc)",
+        type: "agent_router_api_error",
+      },
+    };
+    const err = classifyError(400, body, "claude-opus-4-6");
+
+    expect(err).toBeInstanceOf(ContentBlockedError);
+    expect(err.status).toBe(400);
+    expect(err.message).toMatch(/blocked/i);
+  });
+
+  it("should NOT classify generic 400 as ContentBlockedError", () => {
+    const err = classifyError(400, { error: "bad request" }, "m");
+
+    expect(err).not.toBeInstanceOf(ContentBlockedError);
+    expect(err).toBeInstanceOf(AgentRouterError);
   });
 });
 

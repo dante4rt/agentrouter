@@ -61,8 +61,20 @@ export class TimeoutError extends AgentRouterError {
   }
 }
 
+export class ContentBlockedError extends AgentRouterError {
+  constructor(body: unknown) {
+    super(
+      "AgentRouter blocked the prompt content. Rephrase the request or pick a different model.",
+      400,
+      body
+    );
+    this.name = "ContentBlockedError";
+  }
+}
+
 const UNAUTHORIZED_CLIENT_MARKER = "unauthorized client detected";
 const NO_CHANNEL_MARKER = "无可用渠道";
+const CONTENT_BLOCKED_MARKER = "content-blocked";
 
 export function classifyError(
   status: number,
@@ -81,6 +93,12 @@ export function classifyError(
   // the "switch model" recovery path would be wrong in those cases.
   if (bodyText.includes(NO_CHANNEL_MARKER)) {
     return new NoChannelError(model, body);
+  }
+
+  // 400 + content-blocked marker = upstream content-policy refusal. Distinct
+  // from auth/channel/rate errors so callers can route to "rephrase prompt".
+  if (status === 400 && bodyText.includes(CONTENT_BLOCKED_MARKER)) {
+    return new ContentBlockedError(body);
   }
 
   if (status === 401 || status === 403) {

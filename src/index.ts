@@ -6,6 +6,7 @@ export {
   AuthError,
   RateLimitError,
   TimeoutError,
+  ContentBlockedError,
 } from "./errors";
 export { KNOWN_MODELS, DEFAULT_MODEL, isReasoningModel } from "./models";
 export type {

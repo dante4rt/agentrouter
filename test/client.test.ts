@@ -229,17 +229,17 @@ describe("AgentRouter.chat — HTTP error classification", () => {
   it("should throw NoChannelError on 503 with the no-channel marker", async () => {
     server.use(respondWith(noChannelFixture, 503));
 
-    const ar = makeAr({ model: "claude-opus-4-6" });
+    const ar = makeAr({ model: "claude-opus-4-7" });
 
     await expect(ar.chat("hi")).rejects.toSatisfy((e: unknown) => {
-      return e instanceof NoChannelError && e.model === "claude-opus-4-6";
+      return e instanceof NoChannelError && e.model === "claude-opus-4-7";
     });
   });
 
   it("should throw generic AgentRouterError on bare 503 without the marker", async () => {
     server.use(respondWith({ error: "Service unavailable" }, 503));
 
-    const ar = makeAr({ model: "claude-opus-4-6" });
+    const ar = makeAr({ model: "claude-opus-4-7" });
 
     await expect(ar.chat("hi")).rejects.toSatisfy((e: unknown) => {
       return e instanceof AgentRouterError && !(e instanceof NoChannelError) && e.status === 503;

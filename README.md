@@ -143,7 +143,7 @@ Working models as of v1 (verified against live API):
 - `glm-5.1` — reasoning model
 
 > [!NOTE]
-> Channel availability changes without notice. If a model 503s, try another from the list above.
+> Channel availability fluctuates upstream. A model that worked yesterday may return `NoChannelError` today. Check [agentrouter.org](https://agentrouter.org) for the live list of available models, or catch `NoChannelError` and fall back to another model from `AgentRouter.models`.
 
 ## Errors
 
@@ -154,6 +154,7 @@ All errors extend `AgentRouterError`, which carries `.status` (HTTP code) and `.
 | `UnauthorizedClientError` | 401     | Edge rejected the request fingerprint       | SDK bug — do not override `userAgent` or `fetch` without restoring defaults |
 | `AuthError`               | 401/403 | Invalid API key                             | Check your key                                                              |
 | `NoChannelError`          | 503     | No upstream channel for the requested model | Try a different model; `.model` property names the offender                 |
+| `ContentBlockedError`     | 400     | Upstream content policy blocked the prompt  | Rephrase the prompt — switching models does NOT help (filter is edge-level) |
 | `RateLimitError`          | 429     | Too many requests                           | Back off; `.retryAfter` (seconds) may be set                                |
 | `TimeoutError`            | 0       | Request exceeded `timeout` ms               | Increase `timeout` or retry                                                 |
 | `AgentRouterError`        | any     | Unclassified HTTP error                     | Inspect `.status` and `.body`                                               |
