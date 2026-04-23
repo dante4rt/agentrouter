@@ -2,6 +2,8 @@
 
 Unofficial Node/Bun/Deno SDK for AgentRouter — handles the quirks so you can skip straight to `ar.chat("hi")`.
 
+![@rxmxdhxni/agentrouter promo](./promo.gif)
+
 > [!WARNING]
 > AgentRouter (agentrouter.org) is a third-party reseller offering free credits for Claude, DeepSeek, and GLM via a proxy. This package is a community wrapper — not affiliated with or endorsed by AgentRouter or Anthropic. Your prompts pass through AgentRouter's infrastructure; do not send proprietary code, credentials, or sensitive data. For production, get a key directly from the model provider.
 
