@@ -1,6 +1,6 @@
 {
   "name": "@rxmxdhxni/agentrouter",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Unofficial Node/Bun/Deno SDK for AgentRouter — wraps the OpenAI-compatible reseller proxy at agentrouter.org.",
   "private": false,
   "type": "module",
