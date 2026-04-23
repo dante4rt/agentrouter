@@ -1,8 +1,12 @@
 # @rxmxdhxni/agentrouter
 
+[![npm version](https://img.shields.io/npm/v/@rxmxdhxni/agentrouter.svg)](https://www.npmjs.com/package/@rxmxdhxni/agentrouter)
+[![license](https://img.shields.io/npm/l/@rxmxdhxni/agentrouter.svg)](./LICENSE)
+[![node](https://img.shields.io/node/v/@rxmxdhxni/agentrouter.svg)](https://nodejs.org)
+
 Unofficial Node/Bun/Deno SDK for AgentRouter — handles the quirks so you can skip straight to `ar.chat("hi")`.
 
-![@rxmxdhxni/agentrouter promo](./promo.gif)
+![60-second SDK overview](https://raw.githubusercontent.com/dante4rt/agentrouter/main/promo.gif)
 
 > [!WARNING]
 > AgentRouter (agentrouter.org) is a third-party reseller offering free credits for Claude, DeepSeek, and GLM via a proxy. This package is a community wrapper — not affiliated with or endorsed by AgentRouter or Anthropic. Your prompts pass through AgentRouter's infrastructure; do not send proprietary code, credentials, or sensitive data. For production, get a key directly from the model provider.
@@ -25,7 +29,7 @@ import { AgentRouter } from "@rxmxdhxni/agentrouter";
 
 const ar = new AgentRouter({ apiKey: "sk-..." });
 const reply = await ar.chat("What is 2 + 2?");
-console.log(reply); // "4"
+console.log(reply); // "2 + 2 equals 4."
 ```
 
 ## API
@@ -133,7 +137,7 @@ console.log(AgentRouter.models);
 
 ## Models
 
-Working models as of v1 (verified against live API):
+Known-good models (verified against live API; subject to upstream availability):
 
 - `claude-opus-4-6`
 - `claude-opus-4-7` — default
@@ -167,16 +171,22 @@ All errors extend `AgentRouterError`, which carries `.status` (HTTP code) and `.
 ```typescript
 import {
   AgentRouter,
+  ContentBlockedError,
   NoChannelError,
   RateLimitError,
   UnauthorizedClientError,
 } from "@rxmxdhxni/agentrouter";
 
 try {
-  const result = await ar.complete({ messages, model: "deepseek-v3.2" });
+  const result = await ar.complete({
+    messages: [{ role: "user", content: "..." }],
+    model: "deepseek-v3.2",
+  });
 } catch (err) {
-  if (err instanceof NoChannelError) {
-    console.error(`No channel for ${err.model} — switching model`);
+  if (err instanceof ContentBlockedError) {
+    console.error("Prompt blocked by upstream filter — rephrase and retry");
+  } else if (err instanceof NoChannelError) {
+    console.error(`No channel for ${err.model} — switch model`);
   } else if (err instanceof RateLimitError) {
     const wait = err.retryAfter ?? 10;
     console.error(`Rate limited. Retry in ${wait}s`);
@@ -196,7 +206,10 @@ Reasoning models emit both `"content"` and `"reasoning"` chunks. Separate them:
 let answer = "";
 let thinking = "";
 
-for await (const chunk of ar.stream({ messages, model: "deepseek-r1-0528" })) {
+for await (const chunk of ar.stream({
+  messages: [{ role: "user", content: "Why is the sky blue?" }],
+  model: "deepseek-r1-0528",
+})) {
   if (chunk.type === "content") answer += chunk.delta;
   if (chunk.type === "reasoning") thinking += chunk.delta;
 }
@@ -208,9 +221,13 @@ for await (const chunk of ar.stream({ messages, model: "deepseek-r1-0528" })) {
 
 AgentRouter blocks requests that don't look like the official OpenAI Node SDK. The SDK ships the exact required headers (`x-stainless-lang: js`, etc.). This error appears when you override `userAgent` or pass a custom `fetch` that strips headers. Revert to defaults.
 
-**Why does `claude-haiku-4-5` or `gpt-5` return a 503?**
+**Why do I get `NoChannelError` for a model that worked before?**
 
-Those models have no active upstream channel at AgentRouter right now. The 503 body contains `无可用渠道`. Switch to a model from the [working models list](#models) and catch `NoChannelError` to handle this automatically.
+Channel availability fluctuates upstream. AgentRouter rents pooled access to Claude/DeepSeek/GLM, and a model can lose its channel at any time — the 503 body contains `无可用渠道`. Catch `NoChannelError` and fall back to another model from `AgentRouter.models`.
+
+**Why do I get `ContentBlockedError`?**
+
+AgentRouter runs an edge-level content filter that blocks prompts matching certain patterns (e.g. `Who is <person>?`). The block is BEFORE model dispatch, so switching models will not help — rephrase the prompt instead.
 
 **Why is `content` empty but `reasoning` has text?**
 
