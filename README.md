@@ -39,7 +39,7 @@ console.log(reply); // "2 + 2 equals 4."
 | Option      | Type                    | Default                         | Description                                                                         |
 | ----------- | ----------------------- | ------------------------------- | ----------------------------------------------------------------------------------- |
 | `apiKey`    | `string`                | —                               | **Required.** Your AgentRouter API key                                              |
-| `model`     | `string`                | `"claude-opus-4-7"`             | Model for all requests from this instance                                           |
+| `model`     | `string`                | `"claude-opus-4-8"`             | Model for all requests from this instance                                           |
 | `maxTokens` | `number`                | `1024`                          | Max tokens per completion                                                           |
 | `baseURL`   | `string`                | `"https://agentrouter.org/v1"`  | Override the API endpoint                                                           |
 | `userAgent` | `string`                | `"QwenCode/0.2.0 (linux; x64)"` | Override the User-Agent header                                                      |
@@ -59,7 +59,7 @@ const reply = await ar.chat("Summarize this in one sentence: ...");
 ```
 
 > [!NOTE]
-> For reasoning models (`glm-4.5`, `glm-5.1`, `deepseek-r1-0528`), `chat()` returns an empty string if the model only produced reasoning output. Use `complete()` to access `result.reasoning`.
+> Reasoning models (currently `glm-5.2`) may return reasoning output alongside or instead of content. `chat()` returns an empty string only if the model produced no content at all — check `.debug` output or use `complete()` to access `result.reasoning` directly.
 
 ### `complete(request)`
 
@@ -71,7 +71,7 @@ const result = await ar.complete({
     { role: "system", content: "You are a concise assistant." },
     { role: "user", content: "Explain TCP handshake." },
   ],
-  model: "deepseek-v3.2",
+  model: "gpt-5.5",
   temperature: 0.7,
   maxTokens: 512,
 });
@@ -132,7 +132,7 @@ Static read-only array of known-working models at the time of publish.
 
 ```typescript
 console.log(AgentRouter.models);
-// ["claude-opus-4-6", "claude-opus-4-7", "deepseek-r1-0528", ...]
+// ["claude-opus-4-6", "claude-opus-4-7", "claude-opus-4-8", "glm-5.2", "gpt-5.5"]
 ```
 
 ## Models
@@ -140,13 +140,10 @@ console.log(AgentRouter.models);
 Known-good models (verified against live API; subject to upstream availability):
 
 - `claude-opus-4-6`
-- `claude-opus-4-7` — default
-- `deepseek-r1-0528` — reasoning model
-- `deepseek-v3.1`
-- `deepseek-v3.2`
-- `glm-4.5` — reasoning model
-- `glm-4.6`
-- `glm-5.1` — reasoning model
+- `claude-opus-4-7`
+- `claude-opus-4-8` — default
+- `glm-5.2` — reasoning model (also returns content)
+- `gpt-5.5`
 
 > [!NOTE]
 > Channel availability fluctuates upstream. A model that worked yesterday may return `NoChannelError` today. Check [agentrouter.org](https://agentrouter.org) for the live list of available models, or catch `NoChannelError` and fall back to another model from `AgentRouter.models`.
@@ -180,7 +177,7 @@ import {
 try {
   const result = await ar.complete({
     messages: [{ role: "user", content: "..." }],
-    model: "deepseek-v3.2",
+    model: "gpt-5.5",
   });
 } catch (err) {
   if (err instanceof ContentBlockedError) {
@@ -208,7 +205,7 @@ let thinking = "";
 
 for await (const chunk of ar.stream({
   messages: [{ role: "user", content: "Why is the sky blue?" }],
-  model: "deepseek-r1-0528",
+  model: "glm-5.2",
 })) {
   if (chunk.type === "content") answer += chunk.delta;
   if (chunk.type === "reasoning") thinking += chunk.delta;
@@ -231,7 +228,7 @@ AgentRouter runs an edge-level content filter that blocks prompts matching certa
 
 **Why is `content` empty but `reasoning` has text?**
 
-`glm-4.5`, `glm-5.1`, and `deepseek-r1-0528` are reasoning models that put their output in `reasoning_content`, not `content`. Use `complete()` and read `result.reasoning`. `chat()` will return `""` for these models.
+Some reasoning models put part or all of their output in `reasoning_content` instead of `content`. Behavior varies by model — `glm-5.2` currently returns both fields populated. Use `complete()` and read `result.reasoning` directly rather than assuming `content` is empty.
 
 **Is this package official?**
 

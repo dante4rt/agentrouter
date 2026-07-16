@@ -363,7 +363,7 @@ describe("AgentRouter — outgoing request headers", () => {
 // ---------------------------------------------------------------------------
 
 describe("AgentRouter — default option resolution", () => {
-  it("should use claude-opus-4-7 as default model when none specified", async () => {
+  it("should use claude-opus-4-8 as default model when none specified", async () => {
     let requestBody: Record<string, unknown> = {};
 
     server.use(
@@ -375,7 +375,7 @@ describe("AgentRouter — default option resolution", () => {
 
     await makeAr().chat("hi");
 
-    expect(requestBody.model).toBe("claude-opus-4-7");
+    expect(requestBody.model).toBe("claude-opus-4-8");
   });
 
   it("should use 1024 as default maxTokens when none specified", async () => {
