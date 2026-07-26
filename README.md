@@ -59,7 +59,7 @@ const reply = await ar.chat("Summarize this in one sentence: ...");
 ```
 
 > [!NOTE]
-> Reasoning models (currently `glm-5.2`) may return reasoning output alongside or instead of content. `chat()` returns an empty string only if the model produced no content at all — check `.debug` output or use `complete()` to access `result.reasoning` directly.
+> Reasoning models (currently `glm-5.2`, `kimi-k3`) may return reasoning output alongside or instead of content. `chat()` returns an empty string only if the model produced no content at all — check `.debug` output or use `complete()` to access `result.reasoning` directly. `kimi-k3` in particular can burn its entire `maxTokens` budget on reasoning before emitting content — pass a generous `maxTokens` (500+) or you may see empty `content` with `finishReason: "length"`.
 
 ### `complete(request)`
 
@@ -132,7 +132,7 @@ Static read-only array of known-working models at the time of publish.
 
 ```typescript
 console.log(AgentRouter.models);
-// ["claude-opus-4-6", "claude-opus-4-7", "claude-opus-4-8", "glm-5.2", "gpt-5.5"]
+// ["claude-opus-4-6", "claude-opus-4-7", "claude-opus-4-8", "glm-5.2", "gpt-5.5", "kimi-k3"]
 ```
 
 ## Models
@@ -144,6 +144,7 @@ Known-good models (verified against live API; subject to upstream availability):
 - `claude-opus-4-8` — default
 - `glm-5.2` — reasoning model (also returns content)
 - `gpt-5.5`
+- `kimi-k3` — reasoning model (also returns content; needs generous `maxTokens`)
 
 > [!NOTE]
 > Channel availability fluctuates upstream. A model that worked yesterday may return `NoChannelError` today. Check [agentrouter.org](https://agentrouter.org) for the live list of available models, or catch `NoChannelError` and fall back to another model from `AgentRouter.models`.
@@ -228,7 +229,7 @@ AgentRouter runs an edge-level content filter that blocks prompts matching certa
 
 **Why is `content` empty but `reasoning` has text?**
 
-Some reasoning models put part or all of their output in `reasoning_content` instead of `content`. Behavior varies by model — `glm-5.2` currently returns both fields populated. Use `complete()` and read `result.reasoning` directly rather than assuming `content` is empty.
+Some reasoning models put part or all of their output in `reasoning_content` instead of `content`. Behavior varies by model — `glm-5.2` and `kimi-k3` currently return both fields populated. Use `complete()` and read `result.reasoning` directly rather than assuming `content` is empty. Note that `kimi-k3` can exhaust a small `maxTokens` budget on reasoning alone, leaving `content` empty with `finishReason: "length"` — increase `maxTokens` if you see this.
 
 **Is this package official?**
 
